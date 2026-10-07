@@ -88,9 +88,11 @@ class OpenFoodFactsService {
         version: ProductQueryVersion.v3,
       );
 
-      final result = await OpenFoodAPIClient.getProduct(configuration);
+      final result = await OpenFoodAPIClient.getProductV3(configuration);
 
-      if (result.status != 1 || result.product == null) return null;
+      if (result.status != ProductResultV3.statusSuccess || result.product == null) {
+        return null;
+      }
 
       final p = result.product!;
       final nut = p.nutriments;
