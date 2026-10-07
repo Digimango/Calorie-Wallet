@@ -14,7 +14,6 @@ class OpenFoodFactsService {
     OpenFoodAPIConfiguration.globalCountry = OpenFoodFactsCountry.GERMANY;
   }
 
-  /// Suche nach Produkten (Text)
   Future<List<FoodItem>> searchProducts(String query) async {
     if (query.trim().length < 2) return mockFoods;
 
@@ -36,7 +35,7 @@ class OpenFoodFactsService {
       );
 
       final result = await OpenFoodAPIClient.searchProducts(
-        null, // anonymous
+        null,
         configuration,
       );
 
@@ -48,15 +47,19 @@ class OpenFoodFactsService {
           .where((p) => p.productName != null && p.nutriments != null)
           .map((p) {
             final nut = p.nutriments!;
-            final kcal = nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
+            final kcal =
+                nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
             return FoodItem(
               id: p.barcode ?? 'off_${DateTime.now().millisecondsSinceEpoch}',
               name: p.productNameInLanguages?[OpenFoodFactsLanguage.GERMAN] ??
                   p.productName ??
                   'Unbekanntes Produkt',
               kcal: kcal,
-              protein: nut.getValue(Nutrient.proteins, PerSize.oneHundredGrams) ?? 0,
-              carbs: nut.getValue(Nutrient.carbohydrates, PerSize.oneHundredGrams) ?? 0,
+              protein:
+                  nut.getValue(Nutrient.proteins, PerSize.oneHundredGrams) ?? 0,
+              carbs: nut.getValue(
+                      Nutrient.carbohydrates, PerSize.oneHundredGrams) ??
+                  0,
               fat: nut.getValue(Nutrient.fat, PerSize.oneHundredGrams) ?? 0,
               fiber: nut.getValue(Nutrient.fiber, PerSize.oneHundredGrams) ?? 0,
               defaultPortion: 100,
@@ -68,12 +71,10 @@ class OpenFoodFactsService {
       if (mapped.isEmpty) return _filterMock(query);
       return mapped;
     } catch (e) {
-      // Offline / API-Fehler → Mock
       return _filterMock(query);
     }
   }
 
-  /// Produkt per Barcode laden
   Future<FoodItem?> getProductByBarcode(String barcode) async {
     try {
       final configuration = ProductQueryConfiguration(
@@ -90,7 +91,8 @@ class OpenFoodFactsService {
 
       final result = await OpenFoodAPIClient.getProductV3(configuration);
 
-      if (result.status != ProductResultV3.statusSuccess || result.product == null) {
+      if (result.status != ProductResultV3.statusSuccess ||
+          result.product == null) {
         return null;
       }
 
@@ -98,7 +100,8 @@ class OpenFoodFactsService {
       final nut = p.nutriments;
       if (nut == null) return null;
 
-      final kcal = nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
+      final kcal =
+          nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
       if (kcal <= 0) return null;
 
       return FoodItem(
@@ -108,8 +111,9 @@ class OpenFoodFactsService {
             'Unbekanntes Produkt',
         kcal: kcal,
         protein: nut.getValue(Nutrient.proteins, PerSize.oneHundredGrams) ?? 0,
-        carbs: nut.getValue(Nutrient.carbohydrates, PerSize.oneHundredGrams) ?? 0,
-        fat: nut.getValue(Nutrient.fat, per: PerSize.oneHundredGrams) ?? 0,
+        carbs:
+            nut.getValue(Nutrient.carbohydrates, PerSize.oneHundredGrams) ?? 0,
+        fat: nut.getValue(Nutrient.fat, PerSize.oneHundredGrams) ?? 0,
         fiber: nut.getValue(Nutrient.fiber, PerSize.oneHundredGrams) ?? 0,
         defaultPortion: 100,
       );
