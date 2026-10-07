@@ -48,17 +48,17 @@ class OpenFoodFactsService {
           .where((p) => p.productName != null && p.nutriments != null)
           .map((p) {
             final nut = p.nutriments!;
-            final kcal = nut.getValue(Nutrient.energyKCal, per: PerSize.oneHundredGrams) ?? 0;
+            final kcal = nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
             return FoodItem(
               id: p.barcode ?? 'off_${DateTime.now().millisecondsSinceEpoch}',
               name: p.productNameInLanguages?[OpenFoodFactsLanguage.GERMAN] ??
                   p.productName ??
                   'Unbekanntes Produkt',
               kcal: kcal,
-              protein: nut.getValue(Nutrient.proteins, per: PerSize.oneHundredGrams) ?? 0,
-              carbs: nut.getValue(Nutrient.carbohydrates, per: PerSize.oneHundredGrams) ?? 0,
-              fat: nut.getValue(Nutrient.fat, per: PerSize.oneHundredGrams) ?? 0,
-              fiber: nut.getValue(Nutrient.fiber, per: PerSize.oneHundredGrams) ?? 0,
+              protein: nut.getValue(Nutrient.proteins, PerSize.oneHundredGrams) ?? 0,
+              carbs: nut.getValue(Nutrient.carbohydrates, PerSize.oneHundredGrams) ?? 0,
+              fat: nut.getValue(Nutrient.fat, PerSize.oneHundredGrams) ?? 0,
+              fiber: nut.getValue(Nutrient.fiber, PerSize.oneHundredGrams) ?? 0,
               defaultPortion: 100,
             );
           })
@@ -98,7 +98,7 @@ class OpenFoodFactsService {
       final nut = p.nutriments;
       if (nut == null) return null;
 
-      final kcal = nut.getValue(Nutrient.energyKCal, per: PerSize.oneHundredGrams) ?? 0;
+      final kcal = nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
       if (kcal <= 0) return null;
 
       return FoodItem(
@@ -107,10 +107,10 @@ class OpenFoodFactsService {
             p.productName ??
             'Unbekanntes Produkt',
         kcal: kcal,
-        protein: nut.getValue(Nutrient.proteins, per: PerSize.oneHundredGrams) ?? 0,
-        carbs: nut.getValue(Nutrient.carbohydrates, per: PerSize.oneHundredGrams) ?? 0,
+        protein: nut.getValue(Nutrient.proteins, PerSize.oneHundredGrams) ?? 0,
+        carbs: nut.getValue(Nutrient.carbohydrates, PerSize.oneHundredGrams) ?? 0,
         fat: nut.getValue(Nutrient.fat, per: PerSize.oneHundredGrams) ?? 0,
-        fiber: nut.getValue(Nutrient.fiber, per: PerSize.oneHundredGrams) ?? 0,
+        fiber: nut.getValue(Nutrient.fiber, PerSize.oneHundredGrams) ?? 0,
         defaultPortion: 100,
       );
     } catch (_) {
