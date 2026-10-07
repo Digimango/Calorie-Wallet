@@ -88,16 +88,11 @@ class _HomeShellState extends State<HomeShell> {
               },
               backgroundColor: isDark ? Colors.white : Colors.black,
               foregroundColor: isDark ? Colors.black : Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text(
-                'BUCHEN',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
-              ),
+              elevation: 4,
+              icon: const Icon(Icons.credit_card, size: 26),
+              label: const SizedBox(width: 4),
             )
-          : null,
+          : null, 
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
