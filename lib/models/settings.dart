@@ -8,6 +8,7 @@ class AppSettings {
   final int fiberTarget;
   final int rollover; // übertragene kcal aus Vorwoche
   final bool isDarkMode;
+  final bool showDayMarkers; // Tagesstriche auf der Wochenleiste
   final int lastRolloverWeek;
   final int lastRolloverYear;
 
@@ -21,6 +22,7 @@ class AppSettings {
     this.fiberTarget = 30,
     this.rollover = 0,
     this.isDarkMode = false,
+    this.showDayMarkers = true,
     this.lastRolloverWeek = 0,
     this.lastRolloverYear = 0,
   });
@@ -35,6 +37,7 @@ class AppSettings {
     int? fiberTarget,
     int? rollover,
     bool? isDarkMode,
+    bool? showDayMarkers,
     int? lastRolloverWeek,
     int? lastRolloverYear,
   }) {
@@ -48,6 +51,7 @@ class AppSettings {
       fiberTarget: fiberTarget ?? this.fiberTarget,
       rollover: rollover ?? this.rollover,
       isDarkMode: isDarkMode ?? this.isDarkMode,
+      showDayMarkers: showDayMarkers ?? this.showDayMarkers,
       lastRolloverWeek: lastRolloverWeek ?? this.lastRolloverWeek,
       lastRolloverYear: lastRolloverYear ?? this.lastRolloverYear,
     );
@@ -64,6 +68,7 @@ class AppSettings {
       fiberTarget: json['fiberTarget'] as int? ?? 30,
       rollover: json['rollover'] as int? ?? 0,
       isDarkMode: json['isDarkMode'] as bool? ?? false,
+      showDayMarkers: json['showDayMarkers'] as bool? ?? true,
       lastRolloverWeek: json['lastRolloverWeek'] as int? ?? 0,
       lastRolloverYear: json['lastRolloverYear'] as int? ?? 0,
     );
@@ -79,6 +84,7 @@ class AppSettings {
         'fiberTarget': fiberTarget,
         'rollover': rollover,
         'isDarkMode': isDarkMode,
+        'showDayMarkers': showDayMarkers,
         'lastRolloverWeek': lastRolloverWeek,
         'lastRolloverYear': lastRolloverYear,
       };
