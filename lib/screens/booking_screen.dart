@@ -34,7 +34,7 @@ class _BookingScreenState extends State<BookingScreen> {
   List<FoodItem> _recentFoods(AppState state) {
     final seen = <String>{};
     final result = <FoodItem>[];
-    final all = List<Booking>.from(state.bookings)
+    final all = List<Booking>.from(state.allBookings)
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     for (final b in all) {
       if (seen.add(b.name)) {
