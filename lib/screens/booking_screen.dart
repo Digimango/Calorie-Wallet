@@ -35,7 +35,7 @@ class _BookingScreenState extends State<BookingScreen> {
     final seen = <String>{};
     final result = <FoodItem>[];
     final all = List<Booking>.from(state.bookings)
-      ..sort((a, b) => b.date.compareTo(a.date));
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     for (final b in all) {
       if (seen.add(b.name)) {
         result.add(FoodItem(
