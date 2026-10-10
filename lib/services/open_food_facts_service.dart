@@ -8,28 +8,31 @@ class OpenFoodFactsService {
       version: '1.0.0',
       system: 'Flutter',
       url: 'https://github.com/calorie-wallet',
-      comment: 'Personal calorie budget app – no commercial use',
+      comment: 'Personal calorie budget app',
     );
-    OpenFoodAPIConfiguration.globalLanguages = [OpenFoodFactsLanguage.GERMAN];
+    OpenFoodAPIConfiguration.globalLanguages = [
+      OpenFoodFactsLanguage.GERMAN,
+    ];
     OpenFoodAPIConfiguration.globalCountry = OpenFoodFactsCountry.GERMANY;
   }
 
   Future<List<FoodItem>> searchProducts(String query) async {
-    if (query.trim().length < 2) return mockFoods;
+    final q = query.trim();
+    if (q.length < 2) return [];
 
     try {
       final configuration = ProductSearchQueryConfiguration(
         parametersList: [
-          SearchTerms(terms: [query]),
-          PageSize(size: 12),
+          SearchTerms(terms: [q]),
+          PageSize(size: 20),
         ],
         language: OpenFoodFactsLanguage.GERMAN,
+        country: OpenFoodFactsCountry.GERMANY,
         fields: [
           ProductField.BARCODE,
           ProductField.NAME,
           ProductField.NAME_IN_LANGUAGES,
           ProductField.NUTRIMENTS,
-          ProductField.QUANTITY,
         ],
         version: ProductQueryVersion.v3,
       );
@@ -40,38 +43,41 @@ class OpenFoodFactsService {
       );
 
       if (result.products == null || result.products!.isEmpty) {
-        return _filterMock(query);
+        return [];
       }
 
-      final mapped = result.products!
-          .where((p) => p.productName != null && p.nutriments != null)
-          .map((p) {
-            final nut = p.nutriments!;
-            final kcal =
-                nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
-            return FoodItem(
-              id: p.barcode ?? 'off_${DateTime.now().millisecondsSinceEpoch}',
-              name: p.productNameInLanguages?[OpenFoodFactsLanguage.GERMAN] ??
-                  p.productName ??
-                  'Unbekanntes Produkt',
-              kcal: kcal,
-              protein:
-                  nut.getValue(Nutrient.proteins, PerSize.oneHundredGrams) ?? 0,
-              carbs: nut.getValue(
-                      Nutrient.carbohydrates, PerSize.oneHundredGrams) ??
-                  0,
-              fat: nut.getValue(Nutrient.fat, PerSize.oneHundredGrams) ?? 0,
-              fiber: nut.getValue(Nutrient.fiber, PerSize.oneHundredGrams) ?? 0,
-              defaultPortion: 100,
-            );
-          })
-          .where((f) => f.kcal > 0)
-          .toList();
+      final mapped = <FoodItem>[];
+      for (final p in result.products!) {
+        final nut = p.nutriments;
+        if (nut == null) continue;
 
-      if (mapped.isEmpty) return _filterMock(query);
+        final kcal =
+            nut.getValue(Nutrient.energyKCal, PerSize.oneHundredGrams) ?? 0;
+        if (kcal <= 0) continue;
+
+        final name =
+            p.productNameInLanguages?[OpenFoodFactsLanguage.GERMAN] ??
+                p.productName;
+        if (name == null || name.isEmpty) continue;
+
+        mapped.add(FoodItem(
+          id: p.barcode ?? 'off_${name.hashCode}',
+          name: name,
+          kcal: kcal,
+          protein:
+              nut.getValue(Nutrient.proteins, PerSize.oneHundredGrams) ?? 0,
+          carbs: nut.getValue(
+                  Nutrient.carbohydrates, PerSize.oneHundredGrams) ??
+              0,
+          fat: nut.getValue(Nutrient.fat, PerSize.oneHundredGrams) ?? 0,
+          fiber: nut.getValue(Nutrient.fiber, PerSize.oneHundredGrams) ?? 0,
+          defaultPortion: 100,
+        ));
+      }
       return mapped;
     } catch (e) {
-      return _filterMock(query);
+      // Kein Mock mehr – leere Liste, damit man den Fehler sieht
+      return [];
     }
   }
 
@@ -120,10 +126,5 @@ class OpenFoodFactsService {
     } catch (_) {
       return null;
     }
-  }
-
-  List<FoodItem> _filterMock(String query) {
-    final q = query.toLowerCase();
-    return mockFoods.where((f) => f.name.toLowerCase().contains(q)).toList();
   }
 }
