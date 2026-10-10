@@ -43,303 +43,233 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final state = context.watch<AppState>();
     final isDark = state.settings.isDarkMode;
     final fmt = NumberFormat('#,###', 'de_DE');
-    final canPop = Navigator.of(context).canPop();
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+      children: [
+        const Text(
+          'Wochenlohn',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Konfiguriere deinen persönlichen Kalorienlohn.',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+        ),
+        Divider(
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+          height: 32,
+        ),
+
+        // Ernährungsziel
+        Text(
+          'ERNÄHRUNGSZIEL',
+          style: TextStyle(
+            fontSize: 11,
+            letterSpacing: 1.8,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
           children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Wochenlohn & Einstellungen',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                if (canPop)
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      'SCHLIESSEN',
-                      style: TextStyle(
-                        fontSize: 12,
-                        letterSpacing: 1.2,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-              ],
+            _GoalChip(
+              label: 'Abnehmen',
+              sub: '12.600 kcal',
+              selected: state.settings.goal == 'abnehmen',
+              onTap: () => state.setGoal('abnehmen'),
+              isDark: isDark,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Konfiguriere deinen persönlichen Kalorienlohn.',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+            const SizedBox(width: 8),
+            _GoalChip(
+              label: 'Halten',
+              sub: '14.000 kcal',
+              selected: state.settings.goal == 'halten',
+              onTap: () => state.setGoal('halten'),
+              isDark: isDark,
             ),
-            Divider(
-              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-              height: 32,
+            const SizedBox(width: 8),
+            _GoalChip(
+              label: 'Aufbau',
+              sub: '15.400 kcal',
+              selected: state.settings.goal == 'aufbau',
+              onTap: () => state.setGoal('aufbau'),
+              isDark: isDark,
             ),
+          ],
+        ),
+        const SizedBox(height: 28),
 
-            // MODUS Hell / Dunkel
-            Text(
-              'MODUS',
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 1.8,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w700,
+        // Manueller Wochenlohn
+        Text(
+          'MANUELLER WOCHENLOHN (KCAL)',
+          style: TextStyle(
+            fontSize: 11,
+            letterSpacing: 1.8,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _weeklyCtrl,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(
+                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
               ),
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(state.settings.isDarkMode ? 'Dunkel' : 'Hell'),
-              value: state.settings.isDarkMode,
-              activeColor: isDark ? Colors.white : Colors.black,
-              onChanged: (_) => state.toggleDarkMode(),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(
+                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+              ),
             ),
-            const SizedBox(height: 12),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.zero,
+              borderSide: BorderSide(
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          ),
+          onSubmitted: (v) {
+            final val = int.tryParse(v) ?? state.settings.weeklyTarget;
+            state.updateSettings(state.settings.copyWith(
+              weeklyTarget: val,
+              dailyTarget: (val / 7).round(),
+            ));
+          },
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Empfohlene Tagesausgabe: ${fmt.format(state.settings.dailyTarget)} kcal',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        ),
+        const SizedBox(height: 28),
 
-            // TAGESBUDGET An / Aus
-            Text(
-              'TAGESBUDGET',
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 1.8,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w700,
+        // Investment Ziele
+        Text(
+          'INVESTMENT ZIELE (TÄGLICH IN GRAMM)',
+          style: TextStyle(
+            fontSize: 11,
+            letterSpacing: 1.8,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MacroInput(
+                label: 'Protein',
+                controller: _proteinCtrl,
+                isDark: isDark,
               ),
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(state.settings.showDayMarkers ? 'An' : 'Aus'),
-              subtitle: const Text(
-                'Striche auf der Wochenleiste (1 Tagesbudget je Strich)',
-                style: TextStyle(fontSize: 12),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MacroInput(
+                label: 'Kohlenhydrate',
+                controller: _carbsCtrl,
+                isDark: isDark,
               ),
-              value: state.settings.showDayMarkers,
-              activeColor: isDark ? Colors.white : Colors.black,
-              onChanged: (v) {
-                state.updateSettings(
-                  state.settings.copyWith(showDayMarkers: v),
-                );
-              },
             ),
-            const SizedBox(height: 20),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _MacroInput(
+                label: 'Fett',
+                controller: _fatCtrl,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MacroInput(
+                label: 'Ballaststoffe',
+                controller: _fiberCtrl,
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () {
+            state.updateSettings(state.settings.copyWith(
+              proteinTarget: int.tryParse(_proteinCtrl.text) ?? 160,
+              carbsTarget: int.tryParse(_carbsCtrl.text) ?? 220,
+              fatTarget: int.tryParse(_fatCtrl.text) ?? 70,
+              fiberTarget: int.tryParse(_fiberCtrl.text) ?? 30,
+              weeklyTarget: int.tryParse(_weeklyCtrl.text) ?? 14000,
+              dailyTarget:
+                  ((int.tryParse(_weeklyCtrl.text) ?? 14000) / 7).round(),
+            ));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Einstellungen gespeichert'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          },
+          child: const Text('SPEICHERN'),
+        ),
+        const SizedBox(height: 32),
 
-            // Ernährungsziel
-            Text(
-              'ERNÄHRUNGSZIEL',
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 1.8,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _GoalChip(
-                  label: 'Abnehmen',
-                  sub: '12.600 kcal',
-                  selected: state.settings.goal == 'abnehmen',
-                  onTap: () => state.setGoal('abnehmen'),
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                _GoalChip(
-                  label: 'Halten',
-                  sub: '14.000 kcal',
-                  selected: state.settings.goal == 'halten',
-                  onTap: () => state.setGoal('halten'),
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                _GoalChip(
-                  label: 'Aufbau',
-                  sub: '15.400 kcal',
-                  selected: state.settings.goal == 'aufbau',
-                  onTap: () => state.setGoal('aufbau'),
-                  isDark: isDark,
-                ),
-              ],
-            ),
-            const SizedBox(height: 28),
-
-            // Manueller Wochenlohn
-            Text(
-              'MANUELLER WOCHENLOHN (KCAL)',
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 1.8,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _weeklyCtrl,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-              ),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              ),
-              onSubmitted: (v) {
-                final val = int.tryParse(v) ?? state.settings.weeklyTarget;
-                state.updateSettings(state.settings.copyWith(
-                  weeklyTarget: val,
-                  dailyTarget: (val / 7).round(),
-                ));
-              },
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Empfohlene Tagesausgabe: ${fmt.format(state.settings.dailyTarget)} kcal',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-            ),
-            const SizedBox(height: 28),
-
-            // Investment Ziele
-            Text(
-              'INVESTMENT ZIELE (TÄGLICH IN GRAMM)',
-              style: TextStyle(
-                fontSize: 11,
-                letterSpacing: 1.8,
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _MacroInput(
-                    label: 'Protein',
-                    controller: _proteinCtrl,
-                    isDark: isDark,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _MacroInput(
-                    label: 'Kohlenhydrate',
-                    controller: _carbsCtrl,
-                    isDark: isDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _MacroInput(
-                    label: 'Fett',
-                    controller: _fatCtrl,
-                    isDark: isDark,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _MacroInput(
-                    label: 'Ballaststoffe',
-                    controller: _fiberCtrl,
-                    isDark: isDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                state.updateSettings(state.settings.copyWith(
-                  proteinTarget: int.tryParse(_proteinCtrl.text) ?? 160,
-                  carbsTarget: int.tryParse(_carbsCtrl.text) ?? 220,
-                  fatTarget: int.tryParse(_fatCtrl.text) ?? 70,
-                  fiberTarget: int.tryParse(_fiberCtrl.text) ?? 30,
-                  weeklyTarget: int.tryParse(_weeklyCtrl.text) ?? 14000,
-                  dailyTarget:
-                      ((int.tryParse(_weeklyCtrl.text) ?? 14000) / 7).round(),
-                ));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Einstellungen gespeichert'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-              child: const Text('SPEICHERN'),
-            ),
-            const SizedBox(height: 32),
-
-            // Philosophie
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        // Philosophie
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: isDark ? Colors.grey.shade900 : Colors.grey.shade100,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          size: 16, color: Colors.grey.shade500),
-                      const SizedBox(width: 8),
-                      Text(
-                        'CALORIE WALLET PHILOSOPHIE',
-                        style: TextStyle(
-                          fontSize: 11,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
+                  Icon(Icons.info_outline,
+                      size: 16, color: Colors.grey.shade500),
+                  const SizedBox(width: 8),
                   Text(
-                    'Keine Moral. Kein Lebensmittel ist „gut“ oder „schlecht“. Du verwaltest dein Kalorienbudget flexibel über die Woche. Hohe Ausgaben an einem Tag werden einfach über den Rest der Woche ausgeglichen.',
+                    'CALORIE WALLET PHILOSOPHIE',
                     style: TextStyle(
-                      fontSize: 13,
-                      height: 1.45,
+                      fontSize: 11,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w700,
                       color: Colors.grey.shade600,
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              Text(
+                'Keine Moral. Kein Lebensmittel ist „gut“ oder „schlecht“. Du verwaltest dein Kalorienbudget flexibel über die Woche. Hohe Ausgaben an einem Tag werden einfach über den Rest der Woche ausgeglichen.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
