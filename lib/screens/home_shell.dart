@@ -80,7 +80,7 @@ class _HomeShellState extends State<HomeShell> {
         ),
       ),
       floatingActionButton: _index == 0
-          ? FloatingActionButton.extended(
+          ? FloatingActionButton(
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const BookingScreen()),
@@ -89,10 +89,9 @@ class _HomeShellState extends State<HomeShell> {
               backgroundColor: isDark ? Colors.white : Colors.black,
               foregroundColor: isDark ? Colors.black : Colors.white,
               elevation: 4,
-              icon: const Icon(Icons.credit_card, size: 26),
-              label: const SizedBox(width: 4),
+              child: const Icon(Icons.credit_card, size: 28),
             )
-          : null, 
+          : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
