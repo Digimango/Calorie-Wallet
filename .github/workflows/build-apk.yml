@@ -61,7 +61,7 @@ jobs:
 
       - name: Generate launcher icons
         run: dart run flutter_launcher_icons
-
+      
       - name: Build Release APK
         run: flutter build apk --release
 
