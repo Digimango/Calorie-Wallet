@@ -531,9 +531,13 @@ class _BookingScreenState extends State<BookingScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _book,
-                            child: const Text('BUCHEN'),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _book,
+                              child: const Text('BUCHEN'),
+                            ),
+                          ),
                           ),
                         ],
                       );
