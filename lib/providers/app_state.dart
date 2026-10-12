@@ -26,7 +26,7 @@ class AppState extends ChangeNotifier {
       settings = _storage.loadSettings();
       allBookings = _storage.loadAllBookings();
       _recalculateLists();
-      _checkWeekRollover();
+      await _checkWeekRollover();
     } catch (e) {
       error = e.toString();
     } finally {
@@ -43,7 +43,6 @@ class AppState extends ChangeNotifier {
           b.timestamp.day == now.day;
     }).toList();
 
-    // aktuelle ISO-Woche
     final ref = Booking(
       name: '',
       kcal: 0,
@@ -59,8 +58,8 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
-  /// Prüft ob eine neue Woche begonnen hat und setzt ggf. Rollover zurück
-  void _checkWeekRollover() {
+  /// Neue Woche → Rollover auf 0, Wochenbudget = Lohn-Einstellung
+  Future<void> _checkWeekRollover() async {
     final ref = Booking(
       name: '',
       kcal: 0,
@@ -75,8 +74,11 @@ class AppState extends ChangeNotifier {
 
     if (settings.lastRolloverWeek != currentWeek ||
         settings.lastRolloverYear != currentYear) {
-      // Neue Woche – Rollover bleibt, bis User im Auszug entscheidet
-      // (wir speichern nur den Status)
+      await updateSettings(settings.copyWith(
+        rollover: 0,
+        lastRolloverWeek: currentWeek,
+        lastRolloverYear: currentYear,
+      ));
     }
   }
 
@@ -85,8 +87,9 @@ class AppState extends ChangeNotifier {
     return weekBookings.fold(0, (sum, b) => sum + b.kcal);
   }
 
+  /// Immer: Wochenlohn − Ausgaben der aktuellen Woche (kein Übertrag)
   int get totalAvailable {
-    return settings.weeklyTarget + settings.rollover - totalSpentWeek;
+    return settings.weeklyTarget - totalSpentWeek;
   }
 
   int get todaySpent {
@@ -106,7 +109,6 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  /// Tageswerte der aktuellen Woche für den Auszug
   Map<String, int> get weekDayTotals {
     const days = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'];
     final map = {for (var d in days) d: 0};
@@ -116,7 +118,6 @@ class AppState extends ChangeNotifier {
     return map;
   }
 
-  /// Investment-Erfüllung (Tage, an denen Ziel erreicht wurde)
   Map<String, int> get investmentDaysReached {
     final byDay = <String, Map<String, double>>{};
     for (final b in weekBookings) {
@@ -194,27 +195,6 @@ class AppState extends ChangeNotifier {
 
   Future<void> toggleDarkMode() async {
     await updateSettings(settings.copyWith(isDarkMode: !settings.isDarkMode));
-  }
-
-  Future<void> applyRollover({required bool keep}) async {
-    final ref = Booking(
-      name: '',
-      kcal: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      category: '',
-    );
-    final currentWeek = ref.weekNumber;
-    final currentYear = DateTime.now().year;
-
-    final newRollover = keep ? totalAvailable : 0;
-    await updateSettings(settings.copyWith(
-      rollover: newRollover,
-      lastRolloverWeek: currentWeek,
-      lastRolloverYear: currentYear,
-    ));
   }
 
   // ---------- Open Food Facts ----------
