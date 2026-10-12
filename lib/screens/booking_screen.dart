@@ -538,7 +538,6 @@ class _BookingScreenState extends State<BookingScreen> {
                               child: const Text('BUCHEN'),
                             ),
                           ),
-                          ),
                         ],
                       );
                     }),
