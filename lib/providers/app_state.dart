@@ -28,6 +28,7 @@ class AppState extends ChangeNotifier {
       allBookings = _storage.loadAllBookings();
       _recalculateLists();
       await _checkWeekRollover();
+      await updateHomeWidget();
     } catch (e) {
       error = e.toString();
     } finally {
@@ -147,6 +148,39 @@ class AppState extends ChangeNotifier {
     };
   }
 
+  // ---------- Homescreen-Widget ----------
+  String _fmt(int n) {
+    final s = n.abs().toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return n < 0 ? '−$buf' : buf.toString();
+  }
+
+  Future<void> updateHomeWidget() async {
+    try {
+      final available = totalAvailable;
+      final spent = totalSpentWeek;
+      final target = settings.weeklyTarget;
+      final pct = target > 0
+          ? ((spent / target) * 100).clamp(0, 100).round()
+          : 0;
+
+      await HomeWidget.saveWidgetData<String>('available', _fmt(available));
+      await HomeWidget.saveWidgetData<String>('spent', _fmt(spent));
+      await HomeWidget.saveWidgetData<String>('target', _fmt(target));
+      await HomeWidget.saveWidgetData<int>('progress', pct);
+      await HomeWidget.updateWidget(
+        name: 'CalorieWalletWidgetProvider',
+        androidName: 'CalorieWalletWidgetProvider',
+      );
+    } catch (_) {
+      // Widget optional – Fehler ignorieren
+    }
+  }
+
   // ---------- Actions ----------
   Future<void> addBooking({
     required FoodItem food,
@@ -167,6 +201,7 @@ class AppState extends ChangeNotifier {
     allBookings.insert(0, booking);
     _recalculateLists();
     notifyListeners();
+    await updateHomeWidget();
   }
 
   Future<void> deleteBooking(String id) async {
@@ -174,12 +209,14 @@ class AppState extends ChangeNotifier {
     allBookings.removeWhere((b) => b.id == id);
     _recalculateLists();
     notifyListeners();
+    await updateHomeWidget();
   }
 
   Future<void> updateSettings(AppSettings newSettings) async {
     settings = newSettings;
     await _storage.saveSettings(settings);
     notifyListeners();
+    await updateHomeWidget();
   }
 
   Future<void> setGoal(String goal) async {
