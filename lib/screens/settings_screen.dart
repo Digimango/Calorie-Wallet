@@ -107,14 +107,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             _GoalChip(
               label: 'Abnehmen',
-              sub: '${fmt.format((state.settings.goal == 'abnehmen' ? state.settings.weeklyTarget : 12600))} kcal',
+              sub: state.settings.goal == 'abnehmen'
+                  ? '${fmt.format(state.settings.weeklyTarget)} kcal'
+                  : 'Defizit',
               selected: state.settings.goal == 'abnehmen',
-              onTap: () {
-                state.setGoal('abnehmen');
-                _weeklyCtrl.text = state.settings.weeklyTarget.toString();
-              },
+              onTap: () => state.setGoal('abnehmen'),
               isDark: isDark,
             ),
+            const SizedBox(width: 8),
+            _GoalChip(
+              label: 'Halten',
+              sub: state.settings.goal == 'halten'
+                  ? '${fmt.format(state.settings.weeklyTarget)} kcal'
+                  : 'Erhalt',
+              selected: state.settings.goal == 'halten',
+              onTap: () => state.setGoal('halten'),
+              isDark: isDark,
+            ),
+            const SizedBox(width: 8),
+            _GoalChip(
+              label: 'Aufbau',
+              sub: state.settings.goal == 'aufbau'
+                  ? '${fmt.format(state.settings.weeklyTarget)} kcal'
+                  : 'Überschuss',
+              selected: state.settings.goal == 'aufbau',
+              onTap: () => state.setGoal('aufbau'),
+              isDark: isDark,
+            ),
+          ],
+        ),
             const SizedBox(width: 8),
             _GoalChip(
               label: 'Halten',
