@@ -51,7 +51,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _proteinCtrl.text = protein.toString();
       _carbsCtrl.text = carbs.toString();
       _fatCtrl.text = fat.toString();
-      // Ballaststoffe bleiben unverändert, bis manuell geändert
     });
     final state = context.read<AppState>();
     state.updateSettings(state.settings.copyWith(
@@ -61,7 +60,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       proteinTarget: protein,
       carbsTarget: carbs,
       fatTarget: fat,
-      // fiberTarget nicht anfassen
     ));
   }
 
@@ -92,7 +90,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           height: 32,
         ),
 
-        // Ernährungsziel
         Text(
           'ERNÄHRUNGSZIEL',
           style: TextStyle(
@@ -136,33 +133,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
-            const SizedBox(width: 8),
-            _GoalChip(
-              label: 'Halten',
-              sub: '${fmt.format((state.settings.goal == 'halten' ? state.settings.weeklyTarget : 14000))} kcal',
-              selected: state.settings.goal == 'halten',
-              onTap: () {
-                state.setGoal('halten');
-                _weeklyCtrl.text = state.settings.weeklyTarget.toString();
-              },
-              isDark: isDark,
-            ),
-            const SizedBox(width: 8),
-            _GoalChip(
-              label: 'Aufbau',
-              sub: '${fmt.format((state.settings.goal == 'aufbau' ? state.settings.weeklyTarget : 15400))} kcal',
-              selected: state.settings.goal == 'aufbau',
-              onTap: () {
-                state.setGoal('aufbau');
-                _weeklyCtrl.text = state.settings.weeklyTarget.toString();
-              },
-              isDark: isDark,
-            ),
-          ],
-        ),
         const SizedBox(height: 28),
 
-        // Wochenlohn + Button
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -223,7 +195,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               height: 50,
               child: OutlinedButton(
                 onPressed: () async {
-                  final result = await Navigator.of(context).push<Map<String, dynamic>>(
+                  final result =
+                      await Navigator.of(context).push<Map<String, dynamic>>(
                     MaterialPageRoute(
                       builder: (_) => CalorieCalculatorScreen(
                         initialGoal: state.settings.goal,
@@ -276,7 +249,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 28),
 
-        // Investment Ziele
         Text(
           'INVESTMENT ZIELE (TÄGLICH IN GRAMM)',
           style: TextStyle(
@@ -388,7 +360,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-/// Einfacher lokaler Kalorienrechner (Mifflin-St Jeor)
 class CalorieCalculatorScreen extends StatefulWidget {
   final String initialGoal;
   const CalorieCalculatorScreen({super.key, required this.initialGoal});
@@ -406,7 +377,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
   String _activity = 'moderat';
   late String _goal;
 
-  // Aktivität
   static const _activityFactors = {
     'sitzend': 1.2,
     'leicht': 1.375,
@@ -415,8 +385,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
     'sehr aktiv': 1.9,
   };
 
-  // Makro-Anteile (Mitte der typischen Spannen)
-  // Protein / Carbs / Fat
   static const _macroPct = {
     'abnehmen': [0.32, 0.45, 0.23],
     'halten': [0.27, 0.50, 0.23],
@@ -447,7 +415,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
     if (age == null || weight == null || height == null) return null;
     if (age < 10 || age > 100 || weight < 30 || height < 100) return null;
 
-    // Mifflin-St Jeor
     double bmr;
     if (_isMale) {
       bmr = 10 * weight + 6.25 * height - 5 * age + 5;
@@ -460,7 +427,7 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
     double daily;
     switch (_goal) {
       case 'abnehmen':
-        daily = tdee - 500; // ca. 0,5 kg/Woche
+        daily = tdee - 500;
         break;
       case 'aufbau':
         daily = tdee + 300;
@@ -482,8 +449,7 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        context.watch<AppState>().settings.isDarkMode;
+    final isDark = context.watch<AppState>().settings.isDarkMode;
     final daily = _calculateDaily();
     final macros = daily != null ? _macros(daily) : null;
     final fmt = NumberFormat('#,###', 'de_DE');
@@ -522,14 +488,11 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
               color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
               height: 24,
             ),
-
             Text(
               'Angaben (lokal, nichts wird online gesendet)',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),
             const SizedBox(height: 16),
-
-            // Geschlecht
             Text('GESCHLECHT',
                 style: TextStyle(
                     fontSize: 11,
@@ -555,7 +518,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
             Row(
               children: [
                 Expanded(
@@ -587,7 +549,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
               ],
             ),
             const SizedBox(height: 16),
-
             Text('AKTIVITÄT',
                 style: TextStyle(
                     fontSize: 11,
@@ -608,7 +569,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
               }).toList(),
             ),
             const SizedBox(height: 16),
-
             Text('ZIEL',
                 style: TextStyle(
                     fontSize: 11,
@@ -641,7 +601,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
               ],
             ),
             const SizedBox(height: 28),
-
             if (daily != null && macros != null) ...[
               Container(
                 width: double.infinity,
