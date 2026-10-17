@@ -131,6 +131,7 @@ class WeekOverviewScreen extends StatelessWidget {
     final currentKey = '\( {DateTime.now().year}- \){ref.weekNumber}';
     map.putIfAbsent(currentKey, () => []);
 
+    // Neueste Woche zuerst (Index 0 = aktuell)
     final keys = map.keys.toList()
       ..sort((a, b) {
         final pa = a.split('-');
@@ -170,18 +171,10 @@ class WeekOverviewScreen extends StatelessWidget {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Übersicht',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
+                  const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(
@@ -197,52 +190,62 @@ class WeekOverviewScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Nach links wischen für ältere Wochen',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-              ),
-            ),
-            const SizedBox(height: 8),
             Expanded(
               child: PageView.builder(
                 itemCount: weeks.length,
                 itemBuilder: (context, index) {
                   final snap = weeks[index];
                   return ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'KW ${snap.weekNumber}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              letterSpacing: 1.5,
-                              color: Colors.grey.shade500,
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.w600,
-                            ),
+                      // Jahr mittig
+                      Center(
+                        child: Text(
+                          '${snap.year}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            letterSpacing: 2,
+                            color: Colors.grey.shade500,
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.w600,
                           ),
-                          Text(
-                            '${snap.year}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade500,
-                              fontFamily: 'monospace',
-                            ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // KW darunter mittig
+                      Center(
+                        child: Text(
+                          'KW ${snap.weekNumber}',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                           ),
-                        ],
+                        ),
                       ),
                       Divider(
-                        color:
-                            isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                        height: 24,
+                        color: isDark
+                            ? Colors.grey.shade800
+                            : Colors.grey.shade200,
+                        height: 28,
                       ),
                       _WeekStatementBody(
-                          snapshot: snap, isDark: isDark, fmt: fmt),
+                        snapshot: snap,
+                        isDark: isDark,
+                        fmt: fmt,
+                      ),
+                      if (weeks.length > 1) ...[
+                        const SizedBox(height: 24),
+                        Center(
+                          child: Text(
+                            '← wischen für andere Wochen →',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   );
                 },
