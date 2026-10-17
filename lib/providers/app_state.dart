@@ -220,15 +220,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> setGoal(String goal) async {
-    int daily = 2000;
-    if (goal == 'abnehmen') daily = 1800;
-    if (goal == 'aufbau') daily = 2200;
-    final updated = settings.copyWith(
-      goal: goal,
-      dailyTarget: daily,
-      weeklyTarget: daily * 7,
-    );
-    await updateSettings(updated);
+    await updateSettings(settings.copyWith(goal: goal));
   }
 
   Future<void> toggleDarkMode() async {
