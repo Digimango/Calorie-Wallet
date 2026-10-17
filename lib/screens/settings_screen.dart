@@ -38,9 +38,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  void _syncControllersFromState() {
+    final s = context.read<AppState>().settings;
+    _weeklyCtrl.text = s.weeklyTarget.toString();
+    _proteinCtrl.text = s.proteinTarget.toString();
+    _carbsCtrl.text = s.carbsTarget.toString();
+    _fatCtrl.text = s.fatTarget.toString();
+  }
+
   void _applyCalculated({
     required int dailyKcal,
-    required String goal,
     required int protein,
     required int carbs,
     required int fat,
@@ -54,13 +61,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
     final state = context.read<AppState>();
     state.updateSettings(state.settings.copyWith(
-      goal: goal,
+      goal: 'halten',
       weeklyTarget: weekly,
       dailyTarget: dailyKcal,
       proteinTarget: protein,
       carbsTarget: carbs,
       fatTarget: fat,
+      maintenanceWeekly: weekly,
     ));
+  }
+
+  Future<void> _onGoalTap(String goal) async {
+    final state = context.read<AppState>();
+    await state.setGoal(goal);
+    if (!mounted) return;
+    setState(_syncControllersFromState);
   }
 
   @override
@@ -108,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ? '${fmt.format(state.settings.weeklyTarget)} kcal'
                   : 'Defizit',
               selected: state.settings.goal == 'abnehmen',
-              onTap: () => state.setGoal('abnehmen'),
+              onTap: () => _onGoalTap('abnehmen'),
               isDark: isDark,
             ),
             const SizedBox(width: 8),
@@ -118,7 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ? '${fmt.format(state.settings.weeklyTarget)} kcal'
                   : 'Erhalt',
               selected: state.settings.goal == 'halten',
-              onTap: () => state.setGoal('halten'),
+              onTap: () => _onGoalTap('halten'),
               isDark: isDark,
             ),
             const SizedBox(width: 8),
@@ -128,7 +143,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ? '${fmt.format(state.settings.weeklyTarget)} kcal'
                   : 'Überschuss',
               selected: state.settings.goal == 'aufbau',
-              onTap: () => state.setGoal('aufbau'),
+              onTap: () => _onGoalTap('aufbau'),
               isDark: isDark,
             ),
           ],
@@ -198,22 +213,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   final result =
                       await Navigator.of(context).push<Map<String, dynamic>>(
                     MaterialPageRoute(
-                      builder: (_) => CalorieCalculatorScreen(
-                        initialGoal: state.settings.goal,
-                      ),
+                      builder: (_) => const CalorieCalculatorScreen(),
                     ),
                   );
                   if (result != null && mounted) {
                     _applyCalculated(
                       dailyKcal: result['daily'] as int,
-                      goal: result['goal'] as String,
                       protein: result['protein'] as int,
                       carbs: result['carbs'] as int,
                       fat: result['fat'] as int,
                     );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Lohn & Makros übernommen'),
+                        content: Text('Lohn & Makros übernommen (Halten)'),
                         duration: Duration(seconds: 2),
                       ),
                     );
@@ -301,14 +313,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 16),
         ElevatedButton(
           onPressed: () {
+            final weekly = int.tryParse(_weeklyCtrl.text) ?? 14000;
             state.updateSettings(state.settings.copyWith(
               proteinTarget: int.tryParse(_proteinCtrl.text) ?? 160,
               carbsTarget: int.tryParse(_carbsCtrl.text) ?? 220,
               fatTarget: int.tryParse(_fatCtrl.text) ?? 70,
               fiberTarget: int.tryParse(_fiberCtrl.text) ?? 30,
-              weeklyTarget: int.tryParse(_weeklyCtrl.text) ?? 14000,
-              dailyTarget:
-                  ((int.tryParse(_weeklyCtrl.text) ?? 14000) / 7).round(),
+              weeklyTarget: weekly,
+              dailyTarget: (weekly / 7).round(),
+              // Manueller Wochenlohn = neue Basis, wenn Ziel Halten
+              maintenanceWeekly: state.settings.goal == 'halten'
+                  ? weekly
+                  : state.settings.maintenanceWeekly,
             ));
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -345,7 +361,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Keine Moral. Kein Lebensmittel ist „gut“ oder „schlecht“. Du verwaltest dein Kalorienbudget flexibel über die Woche. Hohe Ausgaben an einem Tag werden einfach über den Rest der Woche ausgeglichen.\n\nManuelle Eingaben haben immer Vorrang vor berechneten Werten.',
+                'Keine Moral. Kein Lebensmittel ist „gut“ oder „schlecht“. Du verwaltest dein Kalorienbudget flexibel über die Woche.\n\n„Lohn berechnen“ setzt immer den Erhalt (Halten). Abnehmen und Aufbau werden davon abgeleitet (−500 / +300 kcal pro Tag).',
                 style: TextStyle(
                   fontSize: 13,
                   height: 1.45,
@@ -360,9 +376,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+/// Rechner berechnet immer nur den Erhalt (Halten / TDEE)
 class CalorieCalculatorScreen extends StatefulWidget {
-  final String initialGoal;
-  const CalorieCalculatorScreen({super.key, required this.initialGoal});
+  const CalorieCalculatorScreen({super.key});
 
   @override
   State<CalorieCalculatorScreen> createState() =>
@@ -375,7 +391,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
   final _heightCtrl = TextEditingController(text: '180');
   bool _isMale = true;
   String _activity = 'moderat';
-  late String _goal;
 
   static const _activityFactors = {
     'sitzend': 1.2,
@@ -384,21 +399,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
     'aktiv': 1.725,
     'sehr aktiv': 1.9,
   };
-
-  static const _macroPct = {
-    'abnehmen': [0.32, 0.45, 0.23],
-    'halten': [0.27, 0.50, 0.23],
-    'aufbau': [0.37, 0.45, 0.18],
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    _goal = widget.initialGoal;
-    if (_goal != 'abnehmen' && _goal != 'halten' && _goal != 'aufbau') {
-      _goal = 'halten';
-    }
-  }
 
   @override
   void dispose() {
@@ -421,25 +421,13 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
     } else {
       bmr = 10 * weight + 6.25 * height - 5 * age - 161;
     }
-
     final tdee = bmr * (_activityFactors[_activity] ?? 1.55);
-
-    double daily;
-    switch (_goal) {
-      case 'abnehmen':
-        daily = tdee - 500;
-        break;
-      case 'aufbau':
-        daily = tdee + 300;
-        break;
-      default:
-        daily = tdee;
-    }
-    return daily.round().clamp(1200, 6000);
+    return tdee.round().clamp(1200, 6000);
   }
 
   Map<String, int> _macros(int daily) {
-    final pct = _macroPct[_goal] ?? _macroPct['halten']!;
+    // immer Halten-Verteilung
+    const pct = [0.27, 0.50, 0.23];
     return {
       'protein': (daily * pct[0] / 4).round(),
       'carbs': (daily * pct[1] / 4).round(),
@@ -489,7 +477,7 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
               height: 24,
             ),
             Text(
-              'Angaben (lokal, nichts wird online gesendet)',
+              'Berechnet immer den Erhalt (Halten). Abnehmen/Aufbau wählst du danach auf der Lohn-Seite.',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),
             const SizedBox(height: 16),
@@ -568,38 +556,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
-            Text('ZIEL',
-                style: TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 1.5,
-                    color: Colors.grey.shade500,
-                    fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _CalcChip(
-                  label: 'Abnehmen',
-                  selected: _goal == 'abnehmen',
-                  onTap: () => setState(() => _goal = 'abnehmen'),
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                _CalcChip(
-                  label: 'Halten',
-                  selected: _goal == 'halten',
-                  onTap: () => setState(() => _goal = 'halten'),
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                _CalcChip(
-                  label: 'Aufbau',
-                  selected: _goal == 'aufbau',
-                  onTap: () => setState(() => _goal = 'aufbau'),
-                  isDark: isDark,
-                ),
-              ],
-            ),
             const SizedBox(height: 28),
             if (daily != null && macros != null) ...[
               Container(
@@ -610,7 +566,7 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ERGEBNIS',
+                      'ERHALT (HALTEN)',
                       style: TextStyle(
                         fontSize: 11,
                         letterSpacing: 1.5,
@@ -645,14 +601,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
                         color: Colors.grey.shade600,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ballaststoffe bleiben bei deinem aktuellen Wert (Standard 30 g).',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -663,7 +611,6 @@ class _CalorieCalculatorScreenState extends State<CalorieCalculatorScreen> {
                   onPressed: () {
                     Navigator.of(context).pop({
                       'daily': daily,
-                      'goal': _goal,
                       'protein': macros['protein'],
                       'carbs': macros['carbs'],
                       'fat': macros['fat'],
