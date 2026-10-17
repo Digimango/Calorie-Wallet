@@ -11,6 +11,7 @@ class AppSettings {
   final bool showDayMarkers; // Tagesstriche auf der Wochenleiste
   final int lastRolloverWeek;
   final int lastRolloverYear;
+  final int maintenanceWeekly; // Basis = Halten (aus Rechner)
 
   const AppSettings({
     this.goal = 'halten',
@@ -25,6 +26,7 @@ class AppSettings {
     this.showDayMarkers = true,
     this.lastRolloverWeek = 0,
     this.lastRolloverYear = 0,
+    this.maintenanceWeekly = 14000,
   });
 
   AppSettings copyWith({
@@ -40,6 +42,7 @@ class AppSettings {
     bool? showDayMarkers,
     int? lastRolloverWeek,
     int? lastRolloverYear,
+    int? maintenanceWeekly,
   }) {
     return AppSettings(
       goal: goal ?? this.goal,
@@ -54,6 +57,7 @@ class AppSettings {
       showDayMarkers: showDayMarkers ?? this.showDayMarkers,
       lastRolloverWeek: lastRolloverWeek ?? this.lastRolloverWeek,
       lastRolloverYear: lastRolloverYear ?? this.lastRolloverYear,
+      maintenanceWeekly: maintenanceWeekly ?? this.maintenanceWeekly,
     );
   }
 
@@ -71,6 +75,8 @@ class AppSettings {
       showDayMarkers: json['showDayMarkers'] as bool? ?? true,
       lastRolloverWeek: json['lastRolloverWeek'] as int? ?? 0,
       lastRolloverYear: json['lastRolloverYear'] as int? ?? 0,
+      maintenanceWeekly: json['maintenanceWeekly'] as int? ??
+          (json['weeklyTarget'] as int? ?? 14000),
     );
   }
 
@@ -87,5 +93,6 @@ class AppSettings {
         'showDayMarkers': showDayMarkers,
         'lastRolloverWeek': lastRolloverWeek,
         'lastRolloverYear': lastRolloverYear,
+        'maintenanceWeekly': maintenanceWeekly,
       };
 }
