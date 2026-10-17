@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -22,11 +23,14 @@ class _BookingScreenState extends State<BookingScreen> {
   double _portion = 100;
   bool _showScanner = false;
   bool _scanned = false;
+  Timer? _debounce;
+  int _searchToken = 0; // veraltete Antworten ignorieren
 
   final _categories = ['Frühstück', 'Mittag', 'Abend', 'Snack'];
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -54,20 +58,33 @@ class _BookingScreenState extends State<BookingScreen> {
     return result;
   }
 
-  Future<void> _onSearch(String q) async {
-    if (q.trim().length < 2) {
-      setState(() => _results = []);
+  void _onSearchChanged(String q) {
+    _debounce?.cancel();
+    final trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setState(() {
+        _results = [];
+        _loading = false;
+      });
       return;
     }
     setState(() => _loading = true);
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      _runSearch(trimmed);
+    });
+  }
+
+  Future<void> _runSearch(String q) async {
+    final token = ++_searchToken;
     final state = context.read<AppState>();
     final results = await state.searchFood(q);
-    if (mounted) {
-      setState(() {
-        _results = results;
-        _loading = false;
-      });
-    }
+    if (!mounted || token != _searchToken) return;
+    // Nur anzeigen, wenn Suchfeld noch passt
+    if (_searchCtrl.text.trim() != q) return;
+    setState(() {
+      _results = results;
+      _loading = false;
+    });
   }
 
   Future<void> _onBarcode(String barcode) async {
@@ -129,7 +146,6 @@ class _BookingScreenState extends State<BookingScreen> {
             : ListView(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
                 children: [
-                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -160,7 +176,6 @@ class _BookingScreenState extends State<BookingScreen> {
                     height: 24,
                   ),
 
-                  // Categories
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -197,21 +212,19 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Search + Barcode
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _searchCtrl,
-                          onChanged: (v) {
-                            if (v.length >= 2) {
-                              _onSearch(v);
-                            } else {
-                              setState(() => _results = []);
-                            }
+                          onChanged: _onSearchChanged,
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: (v) {
+                            _debounce?.cancel();
+                            if (v.trim().length >= 2) _runSearch(v.trim());
                           },
                           decoration: InputDecoration(
-                            hintText: 'Open Food Facts Produktsuche...',
+                            hintText: 'Produkt suchen…',
                             prefixIcon: const Icon(Icons.search, size: 20),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.zero,
@@ -258,16 +271,16 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  // Search results
                   if (_loading)
                     const Padding(
                       padding: EdgeInsets.all(12),
                       child: Center(
                           child: CircularProgressIndicator(strokeWidth: 2)),
                     )
-                  else if (_results.isNotEmpty && _searchCtrl.text.isNotEmpty)
+                  else if (_results.isNotEmpty &&
+                      _searchCtrl.text.trim().length >= 2)
                     Container(
-                      constraints: const BoxConstraints(maxHeight: 160),
+                      constraints: const BoxConstraints(maxHeight: 220),
                       decoration: BoxDecoration(
                         border: Border.all(
                             color: isDark
@@ -301,11 +314,21 @@ class _BookingScreenState extends State<BookingScreen> {
                           );
                         },
                       ),
+                    )
+                  else if (!_loading &&
+                      _searchCtrl.text.trim().length >= 2 &&
+                      _results.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'Keine Treffer – anderen Begriff versuchen.',
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.grey.shade500),
+                      ),
                     ),
 
                   const SizedBox(height: 24),
 
-                  // --- Kein Produkt gewählt: Zuletzt gekauft ---
                   if (_selected == null) ...[
                     const Center(
                       child: Text(
@@ -374,7 +397,6 @@ class _BookingScreenState extends State<BookingScreen> {
                       }),
                   ],
 
-                  // --- Produkt gewählt: Portion + Buchen ---
                   if (_selected != null) ...[
                     Row(
                       children: [
@@ -399,7 +421,6 @@ class _BookingScreenState extends State<BookingScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-
                     Text(
                       'PORTION',
                       style: TextStyle(
@@ -450,7 +471,6 @@ class _BookingScreenState extends State<BookingScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     Builder(builder: (_) {
                       final ratio = _portion / 100.0;
                       final currentKcal = (_selected!.kcal * ratio).round();
