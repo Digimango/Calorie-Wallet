@@ -13,6 +13,7 @@ class StatementScreen extends StatelessWidget {
     final isDark = state.settings.isDarkMode;
     final fmt = NumberFormat('#,###', 'de_DE');
 
+    final now = DateTime.now();
     final ref = Booking(
       name: '',
       kcal: 0,
@@ -23,12 +24,11 @@ class StatementScreen extends StatelessWidget {
       category: '',
     );
     final kw = ref.weekNumber;
-    final year = DateTime.now().year;
 
     final snapshot = _WeekSnapshot.fromBookings(
       bookings: state.weekBookings,
       weekNumber: kw,
-      year: year,
+      year: now.year,
       weeklyTarget: state.settings.weeklyTarget,
       proteinTarget: state.settings.proteinTarget,
       carbsTarget: state.settings.carbsTarget,
@@ -76,13 +76,7 @@ class StatementScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => WeekOverviewScreen(
-                    weeklyTarget: state.settings.weeklyTarget,
-                    proteinTarget: state.settings.proteinTarget,
-                    carbsTarget: state.settings.carbsTarget,
-                    fatTarget: state.settings.fatTarget,
-                    fiberTarget: state.settings.fiberTarget,
-                  ),
+                  builder: (_) => const WeekOverviewScreen(),
                 ),
               );
             },
@@ -94,31 +88,25 @@ class StatementScreen extends StatelessWidget {
   }
 }
 
-/// Wischbare Wochen-Historie
 class WeekOverviewScreen extends StatelessWidget {
-  final int weeklyTarget;
-  final int proteinTarget;
-  final int carbsTarget;
-  final int fatTarget;
-  final int fiberTarget;
+  const WeekOverviewScreen({super.key});
 
-  const WeekOverviewScreen({
-    super.key,
-    required this.weeklyTarget,
-    required this.proteinTarget,
-    required this.carbsTarget,
-    required this.fatTarget,
-    required this.fiberTarget,
-  });
+  int _bookingYear(Booking b) {
+    try {
+      return b.year;
+    } catch (_) {
+      return b.timestamp.year;
+    }
+  }
 
   List<_WeekSnapshot> _buildWeeks(AppState state) {
     final map = <String, List<Booking>>{};
+
     for (final b in state.allBookings) {
-      final key = '\( {b.year}- \){b.weekNumber}';
+      final key = '\( {_bookingYear(b)}- \){b.weekNumber}';
       map.putIfAbsent(key, () => []).add(b);
     }
 
-    // Aktuelle Woche immer dabei
     final ref = Booking(
       name: '',
       kcal: 0,
@@ -128,10 +116,10 @@ class WeekOverviewScreen extends StatelessWidget {
       fiber: 0,
       category: '',
     );
-    final currentKey = '\( {DateTime.now().year}- \){ref.weekNumber}';
-    map.putIfAbsent(currentKey, () => []);
+    final now = DateTime.now();
+    final currentKey = '\( {now.year}- \){ref.weekNumber}';
+    map.putIfAbsent(currentKey, () => List<Booking>.from(state.weekBookings));
 
-    // Neueste Woche zuerst (Index 0 = aktuell)
     final keys = map.keys.toList()
       ..sort((a, b) {
         final pa = a.split('-');
@@ -147,14 +135,14 @@ class WeekOverviewScreen extends StatelessWidget {
       final year = int.parse(parts[0]);
       final week = int.parse(parts[1]);
       return _WeekSnapshot.fromBookings(
-        bookings: map[key]!,
+        bookings: map[key] ?? [],
         weekNumber: week,
         year: year,
-        weeklyTarget: weeklyTarget,
-        proteinTarget: proteinTarget,
-        carbsTarget: carbsTarget,
-        fatTarget: fatTarget,
-        fiberTarget: fiberTarget,
+        weeklyTarget: state.settings.weeklyTarget,
+        proteinTarget: state.settings.proteinTarget,
+        carbsTarget: state.settings.carbsTarget,
+        fatTarget: state.settings.fatTarget,
+        fiberTarget: state.settings.fiberTarget,
       );
     }).toList();
   }
@@ -164,30 +152,77 @@ class WeekOverviewScreen extends StatelessWidget {
     final state = context.watch<AppState>();
     final isDark = state.settings.isDarkMode;
     final fmt = NumberFormat('#,###', 'de_DE');
-    final weeks = _buildWeeks(state);
+
+    List<_WeekSnapshot> weeks;
+    try {
+      weeks = _buildWeeks(state);
+    } catch (e) {
+      // Fallback: nur aktuelle Woche
+      final ref = Booking(
+        name: '',
+        kcal: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        fiber: 0,
+        category: '',
+      );
+      weeks = [
+        _WeekSnapshot.fromBookings(
+          bookings: state.weekBookings,
+          weekNumber: ref.weekNumber,
+          year: DateTime.now().year,
+          weeklyTarget: state.settings.weeklyTarget,
+          proteinTarget: state.settings.proteinTarget,
+          carbsTarget: state.settings.carbsTarget,
+          fatTarget: state.settings.fatTarget,
+          fiberTarget: state.settings.fiberTarget,
+        ),
+      ];
+    }
+
+    if (weeks.isEmpty) {
+      final ref = Booking(
+        name: '',
+        kcal: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        fiber: 0,
+        category: '',
+      );
+      weeks = [
+        _WeekSnapshot.fromBookings(
+          bookings: const [],
+          weekNumber: ref.weekNumber,
+          year: DateTime.now().year,
+          weeklyTarget: state.settings.weeklyTarget,
+          proteinTarget: state.settings.proteinTarget,
+          carbsTarget: state.settings.carbsTarget,
+          fatTarget: state.settings.fatTarget,
+          fiberTarget: state.settings.fiberTarget,
+        ),
+      ];
+    }
 
     return Scaffold(
+      backgroundColor: isDark ? Colors.black : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-              child: Row(
-                children: [
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      'SCHLIESSEN',
-                      style: TextStyle(
-                        fontSize: 12,
-                        letterSpacing: 1.2,
-                        color: Colors.grey.shade500,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'SCHLIESSEN',
+                  style: TextStyle(
+                    fontSize: 12,
+                    letterSpacing: 1.2,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
+                ),
               ),
             ),
             Expanded(
@@ -198,7 +233,6 @@ class WeekOverviewScreen extends StatelessWidget {
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
                     children: [
-                      // Jahr mittig
                       Center(
                         child: Text(
                           '${snap.year}',
@@ -212,7 +246,6 @@ class WeekOverviewScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      // KW darunter mittig
                       Center(
                         child: Text(
                           'KW ${snap.weekNumber}',
