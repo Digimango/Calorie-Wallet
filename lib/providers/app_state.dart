@@ -219,8 +219,52 @@ class AppState extends ChangeNotifier {
     await updateHomeWidget();
   }
 
+  /// Ziel wechseln: Kalorien + Makros relativ zur Basis (Halten / Rechner)
   Future<void> setGoal(String goal) async {
-    await updateSettings(settings.copyWith(goal: goal));
+    final baseWeekly = settings.maintenanceWeekly > 0
+        ? settings.maintenanceWeekly
+        : settings.weeklyTarget;
+    final baseDaily = (baseWeekly / 7).round();
+
+    String g = goal;
+    int daily;
+    switch (g) {
+      case 'abnehmen':
+        daily = (baseDaily - 500).clamp(1200, 6000);
+        break;
+      case 'aufbau':
+        daily = (baseDaily + 300).clamp(1200, 6000);
+        break;
+      default:
+        g = 'halten';
+        daily = baseDaily;
+    }
+
+    final List<double> pct;
+    switch (g) {
+      case 'abnehmen':
+        pct = [0.32, 0.45, 0.23];
+        break;
+      case 'aufbau':
+        pct = [0.37, 0.45, 0.18];
+        break;
+      default:
+        pct = [0.27, 0.50, 0.23];
+    }
+
+    final protein = (daily * pct[0] / 4).round();
+    final carbs = (daily * pct[1] / 4).round();
+    final fat = (daily * pct[2] / 9).round();
+
+    await updateSettings(settings.copyWith(
+      goal: g,
+      weeklyTarget: daily * 7,
+      dailyTarget: daily,
+      proteinTarget: protein,
+      carbsTarget: carbs,
+      fatTarget: fat,
+      maintenanceWeekly: baseWeekly,
+    ));
   }
 
   Future<void> toggleDarkMode() async {
