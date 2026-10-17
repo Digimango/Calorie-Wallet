@@ -43,7 +43,8 @@ jobs:
                       android:windowSoftInputMode="adjustResize">
                       <meta-data
                           android:name="io.flutter.embedding.android.NormalTheme"
-                          android:resource="@style/NormalTheme" />
+                          android:resource="@style/NormalTheme"
+                      />
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN"/>
                           <category android:name="android.intent.category.LAUNCHER"/>
@@ -129,13 +130,13 @@ jobs:
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:id="@+id/widget_root"
               android:layout_width="match_parent"
-              android:layout_height="match_parent"
+              android:layout_height="wrap_content"
               android:background="#FF000000"
               android:orientation="vertical"
               android:paddingLeft="14dp"
               android:paddingRight="14dp"
-              android:paddingTop="10dp"
-              android:paddingBottom="10dp">
+              android:paddingTop="8dp"
+              android:paddingBottom="8dp">
 
               <TextView
                   android:layout_width="wrap_content"
@@ -144,7 +145,8 @@ jobs:
                   android:textColor="#FF9E9E9E"
                   android:textSize="9sp"
                   android:letterSpacing="0.1"
-                  android:textStyle="bold" />
+                  android:textStyle="bold"
+                  android:includeFontPadding="false" />
 
               <TextView
                   android:id="@+id/widget_available"
@@ -153,7 +155,7 @@ jobs:
                   android:layout_marginTop="2dp"
                   android:text="0"
                   android:textColor="#FFFFFFFF"
-                  android:textSize="28sp"
+                  android:textSize="26sp"
                   android:textStyle="bold"
                   android:fontFamily="monospace"
                   android:includeFontPadding="false" />
@@ -161,7 +163,7 @@ jobs:
               <LinearLayout
                   android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:layout_marginTop="6dp"
+                  android:layout_marginTop="4dp"
                   android:orientation="horizontal">
 
                   <TextView
@@ -189,7 +191,7 @@ jobs:
                   style="?android:attr/progressBarStyleHorizontal"
                   android:layout_width="match_parent"
                   android:layout_height="3dp"
-                  android:layout_marginTop="8dp"
+                  android:layout_marginTop="6dp"
                   android:max="100"
                   android:progress="0"
                   android:progressTint="#FFFFFFFF"
@@ -202,7 +204,8 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
               android:minWidth="250dp"
-              android:minHeight="72dp"
+              android:minHeight="60dp"
+              android:minResizeHeight="60dp"
               android:targetCellWidth="4"
               android:targetCellHeight="1"
               android:updatePeriodMillis="0"
