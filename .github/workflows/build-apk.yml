@@ -28,7 +28,6 @@ jobs:
           cat > android/app/src/main/AndroidManifest.xml << 'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.CAMERA" />
-              <uses-permission android:name="android.permission.INTERNET" />
               <application
                   android:label="Calorie Wallet"
                   android:name="${applicationName}"
@@ -67,6 +66,15 @@ jobs:
               </application>
           </manifest>
           EOF
+
+      - name: Verify offline (no INTERNET permission)
+        run: |
+          if grep -q "android.permission.INTERNET" android/app/src/main/AndroidManifest.xml; then
+            echo "ERROR: INTERNET permission still present"
+            exit 1
+          fi
+          echo "OK: no INTERNET permission – app is offline-only"
+          grep "uses-permission" android/app/src/main/AndroidManifest.xml || true
 
       - name: Add home screen widget
         run: |
