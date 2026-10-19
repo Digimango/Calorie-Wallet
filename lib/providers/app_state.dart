@@ -4,11 +4,11 @@ import '../models/booking.dart';
 import '../models/settings.dart';
 import '../models/food_item.dart';
 import '../services/storage_service.dart';
-import '../services/open_food_facts_service.dart';
+import '../services/local_food_service.dart';
 
 class AppState extends ChangeNotifier {
   final StorageService _storage;
-  final OpenFoodFactsService _off = OpenFoodFactsService();
+  late final LocalFoodService _foods;
 
   AppSettings settings = const AppSettings();
   List<Booking> allBookings = [];
@@ -18,12 +18,15 @@ class AppState extends ChangeNotifier {
   bool isLoading = true;
   String? error;
 
-  AppState(this._storage);
+  AppState(this._storage) {
+    _foods = LocalFoodService(_storage);
+  }
 
   Future<void> init() async {
     isLoading = true;
     notifyListeners();
     try {
+      await _foods.init();
       settings = _storage.loadSettings();
       allBookings = _storage.loadAllBookings();
       _recalculateLists();
@@ -60,7 +63,6 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
-  /// Neue Woche → Rollover auf 0, Wochenbudget = Lohn-Einstellung
   Future<void> _checkWeekRollover() async {
     final ref = Booking(
       name: '',
@@ -89,7 +91,6 @@ class AppState extends ChangeNotifier {
     return weekBookings.fold(0, (sum, b) => sum + b.kcal);
   }
 
-  /// Immer: Wochenlohn − Ausgaben der aktuellen Woche (kein Übertrag)
   int get totalAvailable {
     return settings.weeklyTarget - totalSpentWeek;
   }
@@ -176,9 +177,7 @@ class AppState extends ChangeNotifier {
         name: 'CalorieWalletWidgetProvider',
         androidName: 'CalorieWalletWidgetProvider',
       );
-    } catch (_) {
-      // Widget optional – Fehler ignorieren
-    }
+    } catch (_) {}
   }
 
   // ---------- Actions ----------
@@ -219,7 +218,6 @@ class AppState extends ChangeNotifier {
     await updateHomeWidget();
   }
 
-  /// Ziel wechseln: Kalorien + Makros relativ zur Basis (Halten / Rechner)
   Future<void> setGoal(String goal) async {
     final baseWeekly = settings.maintenanceWeekly > 0
         ? settings.maintenanceWeekly
@@ -271,9 +269,13 @@ class AppState extends ChangeNotifier {
     await updateSettings(settings.copyWith(isDarkMode: !settings.isDarkMode));
   }
 
-  // ---------- Open Food Facts ----------
-  Future<List<FoodItem>> searchFood(String query) => _off.searchProducts(query);
+  // ---------- Offline-Lebensmittel ----------
+  List<FoodItem> searchFood(String query) => _foods.search(query);
 
-  Future<FoodItem?> getByBarcode(String barcode) =>
-      _off.getProductByBarcode(barcode);
+  FoodItem? getByBarcode(String barcode) => _foods.byBarcode(barcode);
+
+  Future<void> saveCustomFood(FoodItem item) async {
+    await _foods.saveCustom(item);
+    notifyListeners();
+  }
 }
