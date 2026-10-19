@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -6,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/app_state.dart';
 import '../models/food_item.dart';
 import '../models/booking.dart';
+import 'add_food_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -18,19 +18,15 @@ class _BookingScreenState extends State<BookingScreen> {
   String _category = 'Frühstück';
   final _searchCtrl = TextEditingController();
   List<FoodItem> _results = [];
-  bool _loading = false;
   FoodItem? _selected;
   double _portion = 100;
   bool _showScanner = false;
   bool _scanned = false;
-  Timer? _debounce;
-  int _searchToken = 0; // veraltete Antworten ignorieren
 
   final _categories = ['Frühstück', 'Mittag', 'Abend', 'Snack'];
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -59,56 +55,43 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   void _onSearchChanged(String q) {
-    _debounce?.cancel();
     final trimmed = q.trim();
-    if (trimmed.length < 2) {
-      setState(() {
-        _results = [];
-        _loading = false;
-      });
+    if (trimmed.isEmpty) {
+      setState(() => _results = []);
       return;
     }
-    setState(() => _loading = true);
-    _debounce = Timer(const Duration(milliseconds: 350), () {
-      _runSearch(trimmed);
-    });
+    final results = context.read<AppState>().searchFood(trimmed);
+    setState(() => _results = results);
   }
 
-  Future<void> _runSearch(String q) async {
-    final token = ++_searchToken;
-    final state = context.read<AppState>();
-    final results = await state.searchFood(q);
-    if (!mounted || token != _searchToken) return;
-    // Nur anzeigen, wenn Suchfeld noch passt
-    if (_searchCtrl.text.trim() != q) return;
-    setState(() {
-      _results = results;
-      _loading = false;
-    });
+  Future<void> _openAddFood({String? barcode}) async {
+    final created = await Navigator.of(context).push<FoodItem>(
+      MaterialPageRoute(
+        builder: (_) => AddFoodScreen(barcode: barcode),
+      ),
+    );
+    if (created == null || !mounted) return;
+    await context.read<AppState>().saveCustomFood(created);
+    if (!mounted) return;
+    _selectFood(created);
   }
 
   Future<void> _onBarcode(String barcode) async {
     if (_scanned) return;
     _scanned = true;
-    setState(() => _loading = true);
     final state = context.read<AppState>();
-    final item = await state.getByBarcode(barcode);
-    if (mounted) {
-      setState(() {
-        _showScanner = false;
-        _loading = false;
-        if (item != null) {
-          _selected = item;
-          _portion = item.defaultPortion;
-          _searchCtrl.clear();
-          _results = [];
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Produkt nicht gefunden')),
-          );
-        }
-        _scanned = false;
-      });
+    final item = state.getByBarcode(barcode);
+    if (!mounted) return;
+
+    setState(() {
+      _showScanner = false;
+      _scanned = false;
+    });
+
+    if (item != null) {
+      _selectFood(item);
+    } else {
+      await _openAddFood(barcode: barcode);
     }
   }
 
@@ -123,12 +106,11 @@ class _BookingScreenState extends State<BookingScreen> {
 
   void _book() {
     if (_selected == null) return;
-    final state = context.read<AppState>();
-    state.addBooking(
-      food: _selected!,
-      portionGrams: _portion,
-      category: _category,
-    );
+    context.read<AppState>().addBooking(
+          food: _selected!,
+          portionGrams: _portion,
+          category: _category,
+        );
     Navigator.of(context).pop();
   }
 
@@ -218,13 +200,8 @@ class _BookingScreenState extends State<BookingScreen> {
                         child: TextField(
                           controller: _searchCtrl,
                           onChanged: _onSearchChanged,
-                          textInputAction: TextInputAction.search,
-                          onSubmitted: (v) {
-                            _debounce?.cancel();
-                            if (v.trim().length >= 2) _runSearch(v.trim());
-                          },
                           decoration: InputDecoration(
-                            hintText: 'Produkt suchen…',
+                            hintText: 'Offline suchen…',
                             prefixIcon: const Icon(Icons.search, size: 20),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.zero,
@@ -271,14 +248,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   ),
                   const SizedBox(height: 8),
 
-                  if (_loading)
-                    const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2)),
-                    )
-                  else if (_results.isNotEmpty &&
-                      _searchCtrl.text.trim().length >= 2)
+                  if (_results.isNotEmpty && _searchCtrl.text.trim().isNotEmpty)
                     Container(
                       constraints: const BoxConstraints(maxHeight: 220),
                       decoration: BoxDecoration(
@@ -315,13 +285,12 @@ class _BookingScreenState extends State<BookingScreen> {
                         },
                       ),
                     )
-                  else if (!_loading &&
-                      _searchCtrl.text.trim().length >= 2 &&
+                  else if (_searchCtrl.text.trim().isNotEmpty &&
                       _results.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        'Keine Treffer – anderen Begriff versuchen.',
+                        'Nicht in der Offline-Liste – unten hinzufügen.',
                         style: TextStyle(
                             fontSize: 12, color: Colors.grey.shade500),
                       ),
@@ -346,7 +315,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24),
                           child: Text(
-                            'Noch keine Buchungen.\nSuche ein Produkt oder scanne einen Barcode.',
+                            'Noch keine Buchungen.\nSuche offline oder füge ein Lebensmittel hinzu.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 13,
@@ -395,6 +364,29 @@ class _BookingScreenState extends State<BookingScreen> {
                           ),
                         );
                       }),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => _openAddFood(),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                          shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero),
+                          side: BorderSide(
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        child: Text(
+                          'LEBENSMITTEL HINZUFÜGEN',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
 
                   if (_selected != null) ...[
