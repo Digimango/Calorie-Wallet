@@ -3,7 +3,7 @@
 Dein persönliches Banking für Ernährung.  
 **Keine Moral.** Kein Lebensmittel ist gut oder schlecht – manche kosten einfach mehr vom Budget.
 
-Die App läuft **vollständig offline**: keine Cloud, keine Accounts, keine externen Lebensmittelsuchen. Alle Daten bleiben auf deinem Gerät.
+Ansatz: Keine riesige Online-Datenbank. Du trägst die Produkte ein, die du wirklich isst. Nach wenigen Wochen ist deine Liste „fertig“ – Barcode scannen und buchen wie bei den großen Trackern, nur lokal und kostenlos.Die App läuft **vollständig offline**: keine Cloud, keine Accounts, keine externen Lebensmittelsuchen. Alle Daten bleiben auf deinem Gerät.
 
 ---
 
