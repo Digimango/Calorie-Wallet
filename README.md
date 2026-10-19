@@ -70,7 +70,3 @@ APK über den Workflow **Build APK** erzeugen und unter *Actions → Artifacts* 
 
 ---
 
-## Philosophie
-
-> Keine Moral. Du verwaltest dein Kalorienbudget flexibel über die Woche.  
-> Hohe Ausgaben an einem Tag werden über den Rest der Woche ausgeglichen.
