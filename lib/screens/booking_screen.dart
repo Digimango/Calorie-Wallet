@@ -104,6 +104,63 @@ class _BookingScreenState extends State<BookingScreen> {
     });
   }
 
+  Future<void> _editPortion() async {
+    final ctrl = TextEditingController(
+      text: _portion % 1 == 0
+          ? _portion.round().toString()
+          : _portion.toStringAsFixed(1),
+    );
+    final result = await showDialog<double>(
+      context: context,
+      builder: (ctx) {
+        final isDark = context.read<AppState>().settings.isDarkMode;
+        return AlertDialog(
+          title: const Text('Portion (g)'),
+          content: TextField(
+            controller: ctrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Gramm',
+              suffixText: 'g',
+            ),
+            onSubmitted: (_) {
+              final v = double.tryParse(ctrl.text.replaceAll(',', '.'));
+              if (v != null && v > 0) {
+                Navigator.of(ctx).pop(v.clamp(1, 5000));
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('ABBRECHEN'),
+            ),
+            TextButton(
+              onPressed: () {
+                final v = double.tryParse(ctrl.text.replaceAll(',', '.'));
+                if (v != null && v > 0) {
+                  Navigator.of(ctx).pop(v.clamp(1, 5000));
+                }
+              },
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    ctrl.dispose();
+    if (result != null && mounted) {
+      setState(() => _portion = result);
+    }
+  }
+
   void _book() {
     if (_selected == null) return;
     context.read<AppState>().addBooking(
@@ -112,6 +169,13 @@ class _BookingScreenState extends State<BookingScreen> {
           category: _category,
         );
     Navigator.of(context).pop();
+  }
+
+  String _portionLabel() {
+    final n = _portion % 1 == 0
+        ? _portion.round().toString()
+        : _portion.toStringAsFixed(1);
+    return '$n ${_selected!.unit}';
   }
 
   @override
@@ -422,6 +486,14 @@ class _BookingScreenState extends State<BookingScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Zahl antippen für genaue Eingabe',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -435,26 +507,35 @@ class _BookingScreenState extends State<BookingScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${_portion.round()} ${_selected!.unit}',
-                            style: const TextStyle(
+                          GestureDetector(
+                            onTap: _editPortion,
+                            child: Text(
+                              _portionLabel(),
+                              style: TextStyle(
                                 fontFamily: 'monospace',
                                 fontWeight: FontWeight.w700,
-                                fontSize: 18),
+                                fontSize: 18,
+                                decoration: TextDecoration.underline,
+                                decorationStyle: TextDecorationStyle.dotted,
+                                decorationColor: isDark
+                                    ? Colors.grey.shade500
+                                    : Colors.grey.shade400,
+                              ),
+                            ),
                           ),
                           Row(
                             children: [
                               _PortionBtn(
                                 label: '−',
                                 onTap: () => setState(() =>
-                                    _portion = (_portion - 10).clamp(10, 2000)),
+                                    _portion = (_portion - 10).clamp(1, 5000)),
                                 isDark: isDark,
                               ),
                               const SizedBox(width: 8),
                               _PortionBtn(
                                 label: '+',
                                 onTap: () => setState(() =>
-                                    _portion = (_portion + 10).clamp(10, 2000)),
+                                    _portion = (_portion + 10).clamp(1, 5000)),
                                 isDark: isDark,
                               ),
                             ],
